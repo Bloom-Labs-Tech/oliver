@@ -1,5 +1,5 @@
 {
-  "name": "@oliver/monorepo",
+  "name": "oliver",
   "private": true,
   "scripts": {
     "clean": "rm -f bun.lockb",
@@ -7,6 +7,8 @@
     "dev": "concurrently \"cd packages/bot && bun dev\" \"cd packages/dashboard && bun dev\""
   },
   "workspaces": [
+    "apps/*",
+    "lib/*",
     "packages/*"
   ]
 }

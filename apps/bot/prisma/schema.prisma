@@ -1,0 +1,204 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ChannelType {
+  UNKNOWN
+  TEXT
+  VOICE
+  FORUM
+  CATEGORY
+}
+
+enum TicketType {
+  UNKNOWN
+  TICKET
+  VERIFICATION
+  REPORT
+}
+
+enum FeatureType {
+  AUTOROLE
+  TICKETS
+  LEVELING
+  VERIFICATION
+  INVITES
+  VOICE
+  COMMANDS
+  WELCOME
+  GOODBYE
+}
+
+model Guild {
+  id   String @id @default(cuid())
+  name String
+
+  roles    Role[]
+  channels Channel[]
+  users    GuildMember[]
+  tickets  Ticket[]
+  invites  Invite[]
+
+  guildFeatures GuildFeature[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model GuildFeature {
+  type      FeatureType
+  isEnabled Boolean     @default(false)
+  data      Json
+
+  guildId String
+  guild   Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@id([type, guildId])
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  permissions BigInt[]
+  color       String?
+
+  guildId String
+  guild   Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+}
+
+model Channel {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+
+  type ChannelType
+
+  guildId String
+  guild   Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+}
+
+model GuildMember {
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  xp            Int       @default(0)
+  xpCooldown    DateTime  @default(now())
+  muted         Boolean   @default(false)
+  commandsSent  Int       @default(0)
+  messagesSent  Int       @default(0)
+  timeInVoice   Int       @default(0)
+  joinedVoiceAt DateTime?
+
+  tickets Ticket[]
+  guildId String
+  guild   Guild    @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@id([userId, guildId])
+  @@unique([userId, guildId])
+  @@index([userId, guildId], name: "user_guild_index")
+}
+
+model User {
+  id    String  @id
+  email String?
+
+  lomUsername         String?
+  lomVerificationCode String?
+
+  guilds GuildMember[]
+  keys   ApiKey[]
+
+  sessions Session[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Ticket {
+  id String @id @default(cuid())
+
+  userId    String
+  guildId   String
+  user      GuildMember @relation(fields: [userId, guildId], references: [userId, guildId], onDelete: Cascade)
+  guild     Guild       @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  channelId String      @unique
+
+  type     TicketType
+  username String?
+  logs     TicketLog[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  closedAt  DateTime?
+  deletedAt DateTime?
+}
+
+model TicketLog {
+  ticketId String
+  ticket   Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  userId    String
+  message   String
+  createdAt DateTime @default(now())
+
+  @@id([ticketId, createdAt, userId])
+}
+
+model ApiKey {
+  id String @id @default(cuid())
+
+  name     String?
+  key      String      @unique
+  userId   String?
+  user     User?       @relation(fields: [userId], references: [id])
+  expires  DateTime
+  lastUsed DateTime?
+  uses     Int         @default(0)
+  logs     ApiKeyLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ApiKeyLog {
+  keyId     String
+  key       ApiKey   @relation(fields: [keyId], references: [id], onDelete: Cascade)
+  endpoint  String
+  createdAt DateTime @default(now())
+
+  @@id([keyId, createdAt])
+}
+
+model Invite {
+  code      String  @unique
+  guildId   String
+  guild     Guild   @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  channelId String?
+  userId    String?
+  uses      Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([code, guildId])
+}
