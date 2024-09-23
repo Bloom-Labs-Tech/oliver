@@ -1,11 +1,14 @@
 "use client";
 
+import { nestedTest } from "@oliver/api";
 import { useAuthStore } from "~/providers/authStoreProvider";
 
 export default function Home() {
   const login = useAuthStore((store) => store.login);
   const logout = useAuthStore((store) => store.logout);
   const user = useAuthStore((store) => store.session);
+
+  nestedTest();
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
