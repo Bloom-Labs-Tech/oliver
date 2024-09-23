@@ -1,6 +1,5 @@
 import { z } from '@hono/zod-openapi';
 import { createFactory } from '~/api/lib/helpers';
-import { db } from '~/database';
 
 const routes = createFactory();
 
@@ -55,7 +54,7 @@ routes.openapi(
     },
   },
   async (c) => {
-    const users = await db.user.findMany({
+    const users = await client.db.user.findMany({
       select: {
         id: true,
         lomUsername: true,
@@ -170,7 +169,7 @@ routes.openapi(
   },
   async (c) => {
     const id = c.req.valid('param')?.id;
-    const user = await db.user.findUnique({
+    const user = await client.db.user.findUnique({
       where: { id },
       select: {
         id: true,

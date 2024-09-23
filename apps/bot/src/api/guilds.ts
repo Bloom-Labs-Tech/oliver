@@ -13,7 +13,6 @@ import {
   roleSchema,
   ticketSchema,
 } from '~/api/lib/schemas';
-import { db } from '~/database';
 import {
   AllFeaturesSchema,
   formatAllFeaturesAsObject,
@@ -277,7 +276,7 @@ routes.openapi(
     const target = guild.members.cache.get(memberId);
     if (!target) return c.json({ message: 'Member not found.' }, 404);
 
-    const dbUser = await db.guildMember.findUnique({
+    const dbUser = await client.db.guildMember.findUnique({
       where: {
         userId_guildId: {
           guildId: guild.id,
@@ -969,7 +968,7 @@ routes.openapi(
         permissions: [],
       });
 
-      await db.role.create({
+      await client.db.role.create({
         data: {
           id: role.id,
           name: role.name,
@@ -1077,7 +1076,7 @@ routes.openapi(
 
       client.logger.info(`Created channel ${channel.name} in guild ${guild.name}.`, channel.id);
 
-      const newChannel = await db.channel.upsert({
+      const newChannel = await client.db.channel.upsert({
         where: { id: channel.id },
         update: {
           name: channel.name,
@@ -1156,7 +1155,7 @@ routes.openapi(
     );
     if (!isValid) return c.json({ message }, status as 403 | 404);
 
-    const tickets = await db.ticket.findMany({ where: { guildId } });
+    const tickets = await client.db.ticket.findMany({ where: { guildId } });
 
     return c.json(
       tickets.map((t) => ({
@@ -1242,7 +1241,7 @@ routes.openapi(
     );
     if (!isValid) return c.json({ message }, status as 403 | 404);
 
-    const ticket = await db.ticket.findUnique({ where: { id: ticketId }, include: { logs: true } });
+    const ticket = await client.db.ticket.findUnique({ where: { id: ticketId }, include: { logs: true } });
 
     if (!ticket) return c.json({ message: 'Ticket not found.' }, 404);
 

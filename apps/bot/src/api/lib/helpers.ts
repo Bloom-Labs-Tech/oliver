@@ -3,7 +3,6 @@ import type { PrismaClient } from '@prisma/client';
 import type { Context, MiddlewareHandler } from 'hono';
 import { deleteCookie, getCookie } from 'hono/cookie';
 import type { OliverBot } from '~/client';
-import { db } from '~/database';
 import { env } from '~/env';
 import { client } from '~/index';
 import type { OliverError } from '~/utils/errors';
@@ -57,7 +56,7 @@ export const handleApiKey: ApiKeyFunction = (cfg) => async (c, next) => {
     return config.handleInvalidKey?.(c);
   }
   if (apiKeyRegex.test(apiKey)) {
-    const apiKeyData = await db.apiKey
+    const apiKeyData = await client.db.apiKey
       .update({
         where: { key: apiKey },
         data: { lastUsed: new Date(), uses: { increment: 1 } },
@@ -76,7 +75,7 @@ export const handleApiKey: ApiKeyFunction = (cfg) => async (c, next) => {
       return config.handleInvalidKey?.(c);
     }
   } else {
-    const session = await db.session
+    const session = await client.db.session
       .findUnique({
         where: { id: apiKey },
         select: { id: true, expiresAt: true, user: { select: { id: true } } },
@@ -89,7 +88,7 @@ export const handleApiKey: ApiKeyFunction = (cfg) => async (c, next) => {
 
     if (!session || session.expiresAt < new Date()) {
       if (apiKey) {
-        await db.session.deleteMany({ where: { id: apiKey } }).catch((_) => null);
+        await client.db.session.deleteMany({ where: { id: apiKey } }).catch((_) => null);
       }
       return config.handleInvalidKey?.(c);
     }
@@ -113,7 +112,7 @@ export const createFactory = () => {
   }>();
   app.use(async (c, next) => {
     c.set('client', client);
-    c.set('db', db);
+    c.set('db', client.db);
     await next();
   });
   return app;

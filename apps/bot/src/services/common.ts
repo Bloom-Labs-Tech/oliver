@@ -1,6 +1,6 @@
 import { FeatureType, type GuildFeature } from '@prisma/client';
 import { z } from 'zod';
-import { db } from '~/database';
+import { client } from '..';
 
 export const FeatureData = {
   COMMANDS: z.object({
@@ -131,7 +131,7 @@ export async function getGuildFeature<T extends FeatureType, R extends boolean =
   type: T,
   required?: R,
 ): Promise<ParsedGuildFeature<T, R> | null> {
-  const feature = await db.guildFeature
+  const feature = await client.db.guildFeature
     .upsert({
       where: {
         type_guildId: {
@@ -172,13 +172,13 @@ export async function getAllGuildFeatures<D = null>(
     guildId: string;
   }[]
 > {
-  const features = await db.guildFeature.findMany({ where: { guildId } });
+  const features = await client.db.guildFeature.findMany({ where: { guildId } });
 
   const missingFeatures = Object.values(FeatureType).filter(
     (type) => !features.some((feature) => feature.type === type),
   );
   if (missingFeatures.length) {
-    await db.guildFeature
+    await client.db.guildFeature
       .createMany({
         data: missingFeatures.map((type) => ({
           guildId,
@@ -232,7 +232,7 @@ export async function updateGuildFeature<T extends FeatureType>(
   const validation = FeatureData[type].safeParse(data);
   if (!validation.success) return null;
 
-  const feature = await db.guildFeature.upsert({
+  const feature = await client.db.guildFeature.upsert({
     where: {
       type_guildId: {
         guildId,

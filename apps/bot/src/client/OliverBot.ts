@@ -12,8 +12,8 @@ import {
   Partials,
   Role,
 } from 'discord.js';
-import { db } from '~/database';
 import { env } from '~/env';
+import { db } from '~/prisma';
 import { CommandHandler } from './OliverCommandHandler';
 import { EventHandler } from './OliverEventHandler';
 import OliverInviteTracker from './OliverInviteTracker';

@@ -2,13 +2,10 @@
   "name": "oliver",
   "private": true,
   "scripts": {
-    "clean": "rm -f bun.lockb",
-    "start": "concurrently \"cd packages/bot && bun start\" \"cd packages/dashboard && bun start\"",
-    "dev": "concurrently \"cd packages/bot && bun dev\" \"cd packages/dashboard && bun dev\""
+    "clean": "rm -rf bun.lockb node_modules apps/*/node_modules packages/*/node_modules apps/*/bun.lockb packages/*/bun.lockb"
   },
   "workspaces": [
     "apps/*",
-    "lib/*",
     "packages/*"
   ]
 }

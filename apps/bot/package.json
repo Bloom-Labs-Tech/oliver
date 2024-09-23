@@ -26,7 +26,6 @@
     "typescript": "^5.5.4"
   },
   "dependencies": {
-    "@oliver/common": "workspace:*",
     "@hono/zod-openapi": "^0.16.0",
     "@prisma/client": "^5.19.1",
     "@sapphire/discord.js-utilities": "^7.3.0",
