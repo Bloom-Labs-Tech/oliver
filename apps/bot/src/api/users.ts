@@ -1,5 +1,6 @@
 import { z } from '@hono/zod-openapi';
 import { createFactory } from '~/api/lib/helpers';
+import { client } from '..';
 
 const routes = createFactory();
 
@@ -10,50 +11,79 @@ routes.openapi(
     description: 'Get all users in the database.',
     security: [{ 'API Key': [] }],
     tags: ['Users'],
+    request: {
+      query: z.object({
+        limit: z.number({ coerce: true, description: 'The maximum number of users to return.' }).optional().openapi({
+          description: 'The maximum number of users to return.',
+          example: 10,
+        }),
+        page: z.number({ coerce: true, description: 'The page number to return.', }).optional().openapi({
+          description: 'The page number to return.',
+          example: 1,
+        }),
+      }),
+    },
     responses: {
       200: {
         description: 'The users were successfully retrieved.',
         content: {
           'application/json': {
-            schema: z.array(
-              z.object({
-                id: z.string({ description: 'The ID of the member.' }).openapi({
-                  description: 'The ID of the member.',
-                  example: '1234567890',
-                }),
-                tag: z.string({ description: 'The tag of the member.' }).openapi({
-                  description: 'The tag of the member.',
-                  example: 'Oliver#0001',
-                }),
-                avatar: z
-                  .string({ description: 'The avatar of the member.' })
-                  .optional()
-                  .openapi({
-                    description: 'The avatar of the member.',
-                    example: 'https://cdn.discordapp.com/avatars/1234567890/abcdef.jpg',
-                  })
-                  .nullable(),
-                guilds: z.array(
-                  z.string({ description: 'The ID of the guild.' }).openapi({
-                    description: 'The ID of the guild.',
+            schema: z.object({
+              total: z.number({ description: 'The total number of users.' }).openapi({
+                description: 'The total number of users.',
+                example: 123456,
+              }),
+              page: z.number({ description: 'The current page number.' }).openapi({
+                description: 'The current page number.',
+                example: 1,
+              }),
+              limit: z.number({ description: 'The maximum number of users per page.' }).openapi({
+                description: 'The maximum number of users per page.',
+                example: 10,
+              }),
+              users: z.array(
+                z.object({
+                  id: z.string({ description: 'The ID of the member.' }).openapi({
+                    description: 'The ID of the member.',
                     example: '1234567890',
                   }),
-                ),
-                lomUsername: z
-                  .string({ description: 'The username of the member on Legend of Mushroom.' })
-                  .openapi({
-                    description: 'The username of the member on Legend of Mushroom.',
-                    example: 'Oliver',
-                  })
-                  .nullable(),
-              }),
-            ),
-          },
+                  tag: z.string({ description: 'The tag of the member.' }).openapi({
+                    description: 'The tag of the member.',
+                    example: 'Oliver#0001',
+                  }),
+                  avatar: z
+                    .string({ description: 'The avatar of the member.' })
+                    .optional()
+                    .openapi({
+                      description: 'The avatar of the member.',
+                      example: 'https://cdn.discordapp.com/avatars/1234567890/abcdef.jpg',
+                    })
+                    .nullable(),
+                  guilds: z.array(
+                    z.string({ description: 'The ID of the guild.' }).openapi({
+                      description: 'The ID of the guild.',
+                      example: '1234567890',
+                    }),
+                  ),
+                  lomUsername: z
+                    .string({ description: 'The username of the member on Legend of Mushroom.' })
+                    .openapi({
+                      description: 'The username of the member on Legend of Mushroom.',
+                      example: 'Oliver',
+                    })
+                    .nullable(),
+                }),
+              ),  
+            })
+          }
         },
       },
     },
   },
   async (c) => {
+    const { limit = 10, page = 1 } = c.req.valid('query');
+
+    const total = await client.db.user.count();
     const users = await client.db.user.findMany({
       select: {
         id: true,
@@ -64,6 +94,8 @@ routes.openapi(
           },
         },
       },
+      take: Math.max(1, Math.min(limit, 100)),
+      skip: Math.max(0, (page - 1) * limit),
     });
 
     const cachedUsers = c.get('client')?.users.cache.filter((u) => !u.bot && users.some((user) => user.id === u.id));
@@ -78,7 +110,12 @@ routes.openapi(
       };
     });
 
-    return c.json(data, 200);
+    return c.json({
+      total,
+      limit,
+      page,
+      users: data,
+    }, 200);
   },
 );
 

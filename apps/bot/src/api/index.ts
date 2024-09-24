@@ -1,5 +1,6 @@
 import { z } from '@hono/zod-openapi';
 import { apiReference } from '@scalar/hono-api-reference';
+import { cors } from 'hono/cors';
 import { env } from '~/env';
 import packageJson from '../../package.json';
 import authRoutes from './auth';
@@ -8,6 +9,11 @@ import { createFactory, handleApiKey } from './lib/helpers';
 import userRoutes from './users';
 
 const routes = createFactory();
+
+routes.use(cors({
+  credentials: true,
+  origin: 'http://localhost:3000',
+}));
 
 routes.openAPIRegistry.registerComponent('securitySchemes', 'API Key', {
   type: 'apiKey',

@@ -1,5 +1,5 @@
 {
-  "name": "@oliver/bot",
+  "name": "oliver",
   "version": "0.0.1",
   "main": "src/index.ts",
   "description": "",
@@ -8,9 +8,7 @@
     "start": "bun src/index.ts",
     "test": "bun test"
   },
-  "keywords": [
-    "bun"
-  ],
+  "keywords": ["bun"],
   "license": "MIT",
   "homepage": "https://github.com/ivanoliverfabra/bun-starter#readme",
   "repository": {

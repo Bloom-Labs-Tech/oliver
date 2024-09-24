@@ -1,5 +1,6 @@
 import { OpenAPIHono } from '@hono/zod-openapi';
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient, Session } from '@prisma/client';
+import { PermissionsBitField } from 'discord.js';
 import type { Context, MiddlewareHandler } from 'hono';
 import { deleteCookie, getCookie } from 'hono/cookie';
 import type { OliverBot } from '~/client';
@@ -19,6 +20,7 @@ type ApiKeyContext =
   | {
       key: string;
       id: string;
+      session: Session | null;
       uses: number;
       userId: string | null;
       lastUsed: Date | null;
@@ -27,6 +29,7 @@ type ApiKeyContext =
   | {
       key: string;
       id: string | null;
+      session: null;
       uses: number | null;
       userId: string | null;
       lastUsed: Date | null;
@@ -43,7 +46,7 @@ type ApiKeyConfig = {
 type ApiKeyFunction = (cfg?: ApiKeyConfig) => MiddlewareHandler;
 
 const defaultConfig: ApiKeyConfig = {
-  getKey: (c) => c.req.header('x-api-key') || c.req.header('x-session-id'),
+  getKey: (c) => c.req.header('x-api-key') || c.req.header('x-session-id') || getSessionId(c),
   handleInvalidKey: (c) => c.json({ message: 'Invalid API key' }, 401),
   onError: (c, error) => c.json({ message: error.message }, 500),
 };
@@ -69,6 +72,7 @@ export const handleApiKey: ApiKeyFunction = (cfg) => async (c, next) => {
     c.set('apiKey', {
       apiKey: apiKey || '',
       ...apiKeyData,
+      session: null,
       valid: !!apiKeyData,
     });
     if (!apiKey || !apiKeyData) {
@@ -78,7 +82,7 @@ export const handleApiKey: ApiKeyFunction = (cfg) => async (c, next) => {
     const session = await client.db.session
       .findUnique({
         where: { id: apiKey },
-        select: { id: true, expiresAt: true, user: { select: { id: true } } },
+        include: { user: { select: { id: true }} },
       })
       .catch((error) => {
         client.logger.error('Error fetching session', error);
@@ -96,6 +100,7 @@ export const handleApiKey: ApiKeyFunction = (cfg) => async (c, next) => {
     c.set('apiKey', {
       key: apiKey,
       id: session.id,
+      session,
       uses: null,
       userId: session.user.id,
       lastUsed: null,
@@ -255,3 +260,79 @@ export const handleSignout = async (c: HonoContext) => {
 
   return c.json({ success: true });
 };
+
+export const getGuildsFromSessionTokens = async (c: HonoContext): Promise<{
+  id: string;
+  name: string;
+  icon: string;
+  banner: string | null;
+  isOwner: boolean;
+  permissions: string;
+  canManage: boolean;
+  hasBot: boolean;
+}[]> => {
+  const client = c.get('client');
+  const session = c.get('apiKey')?.session;
+
+  if (!session) {
+    return [];
+  }
+
+  const { accessToken, refreshToken: rT, expiresAt } = session;
+
+  if (expiresAt < new Date()) {
+    const newToken = await refreshToken(rT);
+    if (!newToken) {
+      return [];
+    }
+
+    await client.db.session.update({
+      where: { id: session.id },
+      data: {
+        accessToken: newToken.access_token,
+        refreshToken: newToken.refresh_token,
+        expiresAt: new Date(Date.now() + newToken.expires_in * 1000),
+      },
+    });
+
+    return getGuildsFromSessionTokens(c);
+  }
+
+  const guilds = await fetch(`${API_ENDPOINT}/users/@me/guilds`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  }).then((res) => res.json()) as DiscordOAuth2Guild[];
+
+  const mappedGuilds = guilds.map((g) => {
+    const canManage = new PermissionsBitField(BigInt(g.permissions)).has('ManageGuild');
+    const hasBot = client.guilds.cache.has(g.id) ?? false;
+
+    return {
+      id: g.id,
+      name: g.name,
+      icon: `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png`,
+      banner: g.banner ? `https://cdn.discordapp.com/banners/${g.id}/${g.banner}.png` : null,
+      isOwner: g.owner,
+      permissions: g.permissions,
+      canManage,
+      hasBot
+    };
+  }).sort((a, b) => {
+    if (a.isOwner !== b.isOwner) return a.isOwner ? -1 : 1;
+    if (a.canManage !== b.canManage) return a.canManage ? -1 : 1;
+    if (a.hasBot !== b.hasBot) return a.hasBot ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  return mappedGuilds;
+};
+
+export const parseBigInt = (input: string | number | bigint | undefined | null): bigint => {
+  try {
+    return BigInt(input?.toString().replace(/[^0-9]/g, '') ?? 0);
+  } catch (e) {
+    client.logger.error('Error parsing BigInt', e);
+    return 0n;
+  }
+}
