@@ -1,3 +1,4 @@
+import type { ChatInputCommandInteraction, EmbedBuilder, GuildTextBasedChannel } from 'discord.js';
 import { readdir, stat } from 'node:fs/promises';
 import { join } from 'path';
 import { ValidationError } from './errors';
@@ -55,4 +56,19 @@ export const parseNumber = (value: string | number): number => {
 export const generateRandomString = (length: number): string => {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   return Array.from({ length }, () => characters.charAt(Math.floor(Math.random() * characters.length))).join('');
+};
+
+export const followUp = async (
+  interaction: ChatInputCommandInteraction,
+  embed: EmbedBuilder,
+  textChannel: GuildTextBasedChannel,
+) => {
+  // Follow up interaction if created time is less than 15 minutes
+  if (interaction.isRepliable()) {
+    if (Date.now() - interaction.createdTimestamp < 15 * 60 * 1000) {
+      await interaction.followUp({ embeds: [embed] });
+    } else {
+      await textChannel.send({ embeds: [embed] });
+    }
+  }
 };

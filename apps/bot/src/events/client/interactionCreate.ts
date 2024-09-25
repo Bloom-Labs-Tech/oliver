@@ -1,34 +1,34 @@
 import { isGuildBasedChannel, isTextChannel } from '@sapphire/discord.js-utilities';
 import {
-  ActionRowBuilder,
-  AutocompleteInteraction,
-  ButtonInteraction,
-  CommandInteraction,
-  ComponentType,
-  type Interaction,
-  ModalSubmitInteraction,
-  TextInputBuilder,
-  TextInputStyle,
+    ActionRowBuilder,
+    AutocompleteInteraction,
+    ButtonInteraction,
+    CommandInteraction,
+    ComponentType,
+    type Interaction,
+    ModalSubmitInteraction,
+    TextInputBuilder,
+    TextInputStyle,
 } from 'discord.js';
 import { OliverCommand, OliverEvent } from '~/client';
 import { TicketActions, type TicketActionsType, VerificationActions, isTicketAction } from '~/services/common';
 import { handleLevelUp } from '~/services/levels';
 import {
-  claimVerificationTicket,
-  closeTicket,
-  createTicket,
-  generateVerificationCode,
-  verifyUserTicket,
+    claimVerificationTicket,
+    closeTicket,
+    createTicket,
+    generateVerificationCode,
+    verifyUserTicket,
 } from '~/services/tickets';
 import {
-  createFormModal,
-  createServerUpdateEmbed,
-  createTicketButtons,
-  createTicketEmbed,
-  createVerificationClaimButton,
-  createVerificationTokenEmbed,
-} from '../utils/embeds';
-import { OliverError } from '../utils/errors';
+    createFormModal,
+    createServerUpdateEmbed,
+    createTicketButtons,
+    createTicketEmbed,
+    createVerificationClaimButton,
+    createVerificationTokenEmbed,
+} from '../../utils/embeds';
+import { OliverError } from '../../utils/errors';
 
 export default class OliverReadyEvent extends OliverEvent<'interactionCreate'> {
   public constructor() {

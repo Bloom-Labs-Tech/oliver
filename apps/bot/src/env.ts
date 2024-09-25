@@ -11,6 +11,10 @@ export const env = createEnv({
     PORT: z.number({ coerce: true }),
     BASE_URL: z.string(),
     DASHBOARD_URL: z.string(),
+    SPOTIFY_CLIENT_ID: z.string(),
+    SPOTIFY_CLIENT_SECRET: z.string(),
+    BOT_GOOGLE_EMAIL: z.string(),
+    BOT_GOOGLE_PASSWORD: z.string(),
   },
-  runtimeEnv: Bun.env,
+  runtimeEnv: process.env,
 });

@@ -123,15 +123,22 @@ export const createFactory = () => {
   return app;
 };
 
-export function generateOAuthLoginUrl(state: string) {
-  const scopes = ['identify', 'email'];
+export function generateOAuthLoginUrl(state: string, type: 'invite' | 'login') {
+  const scopes = ['identify', 'guilds', 'email']; 
+  if (type === 'invite') scopes.push('bot');
+  const permissions = '581936125094001';
+  const integrationType = '0';
 
-  const url = new URL('https://discord.com/api/oauth2/authorize');
+  const url = new URL('https://discord.com/oauth2/authorize');
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('client_id', env.DISCORD_CLIENT_ID);
   url.searchParams.set('redirect_uri', `${env.BASE_URL}/auth/callback`);
   url.searchParams.set('scope', scopes.join(' '));
   url.searchParams.set('state', state);
+  if (type === "invite") {
+    url.searchParams.set('permissions', permissions);
+    url.searchParams.set('integration_type', integrationType);
+  }
 
   return url.toString();
 }

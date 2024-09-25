@@ -16,7 +16,13 @@ const routes = createFactory();
 routes.get('/login', async (c) => {
   const state = generateRandomString(24);
   setCookie(c, 'state', state, { maxAge: 300, httpOnly: true });
-  return c.redirect(generateOAuthLoginUrl(state));
+  return c.redirect(generateOAuthLoginUrl(state, "login"));
+});
+
+routes.get('/invite', async (c) => {
+  const state = generateRandomString(24);
+  setCookie(c, 'state', state, { maxAge: 300, httpOnly: true });
+  return c.redirect(generateOAuthLoginUrl(state, "invite"));
 });
 
 routes.get('/callback', async (c) => {

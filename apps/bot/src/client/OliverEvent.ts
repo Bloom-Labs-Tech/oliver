@@ -26,7 +26,7 @@ export abstract class OliverEvent<K extends keyof ClientEvents> {
     return options?.[option] !== undefined ? options[option] : defaultOptions[option];
   }
 
-  public async execute(...args: ClientEvents[K]): Promise<void> {
+  public async execute(..._args: ClientEvents[K]): Promise<void> {
     throw new Error('Method not implemented.');
   }
 }

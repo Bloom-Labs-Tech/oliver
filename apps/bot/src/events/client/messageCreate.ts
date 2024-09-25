@@ -2,7 +2,7 @@ import { isGuildBasedChannel } from '@sapphire/discord.js-utilities';
 import { Message } from 'discord.js';
 import { getGuildFeature } from '~/services/common';
 import { handleLevelUp } from '~/services/levels';
-import { OliverEvent } from '../client';
+import { OliverEvent } from '../../client';
 
 export default class OliverReadyEvent extends OliverEvent<'messageCreate'> {
   public constructor() {

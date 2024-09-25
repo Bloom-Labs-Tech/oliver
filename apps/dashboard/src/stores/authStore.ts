@@ -12,6 +12,7 @@ export type AuthState = {
 export type AuthActions = {
   login: () => void;
   logout: () => void;
+  invite: () => void;
 }
 
 export type AuthStore = AuthState & AuthActions;
@@ -28,6 +29,9 @@ export const createAuthStore = (
     ...initState,
     login: () => {
       navigate('http://localhost:3001/auth/login');
+    },
+    invite: () => {
+      navigate('http://localhost:3001/auth/invite');
     },
     logout: () => fetch('http://localhost:3000/api/auth/signout').then(() => {
       set({ status: 'unauthenticated', session: null });

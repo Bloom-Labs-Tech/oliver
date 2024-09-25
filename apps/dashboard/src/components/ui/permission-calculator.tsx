@@ -1,7 +1,7 @@
 "use client";
 
-import { PermissionFlags } from "@oliver/api/calculator";
-import { usePermissionCalculator } from "@oliver/api/react";
+import { PermissionFlags } from "@bloomlabs/permission-calculator";
+import { usePermissionCalculator } from "@bloomlabs/permission-calculator-react";
 import { useCallback, useEffect } from "react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -12,7 +12,7 @@ type PermissionCalculatorProps = {
   onPermissionChange?: (permissions: bigint) => void;
 };
 
-export function PermissionCalculator({
+export function PermissionCalculatorComponent({
   permissions: defaultPermissions = 0n,
   onPermissionChange,
 }: PermissionCalculatorProps) {

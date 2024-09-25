@@ -1,9 +1,9 @@
 import { isTextChannel } from '@sapphire/discord.js-utilities';
 import type { GuildMember } from 'discord.js';
 import { getGuildFeature } from '~/services/common';
-import { OliverEvent } from '../client';
-import { GreetingsCard } from '../services/cards/greetingCard';
-import { CommandExecutionError } from '../utils/errors';
+import { OliverEvent } from '../../client';
+import { GreetingsCard } from '../../services/cards/greetingCard';
+import { CommandExecutionError } from '../../utils/errors';
 
 export default class OliverGuildMemberRemoveEvent extends OliverEvent<'guildMemberRemove'> {
   public constructor() {
