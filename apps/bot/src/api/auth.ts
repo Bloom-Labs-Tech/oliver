@@ -14,50 +14,58 @@ import {
 const routes = createFactory();
 
 routes.get('/login', async (c) => {
+  await handleSignout(c);
+  const returnTo = c.req.query('callback');
   const state = generateRandomString(24);
   setCookie(c, 'state', state, { maxAge: 300, httpOnly: true });
+  if (returnTo) {
+    setCookie(c, 'returnTo', returnTo, { maxAge: 300, httpOnly: true });
+  }
   return c.redirect(generateOAuthLoginUrl(state, "login"));
 });
 
 routes.get('/invite', async (c) => {
+  await handleSignout(c);
+  const guildId = c.req.query('guildId');
   const state = generateRandomString(24);
   setCookie(c, 'state', state, { maxAge: 300, httpOnly: true });
-  return c.redirect(generateOAuthLoginUrl(state, "invite"));
+  setCookie(c, 'returnTo', `/g/${guildId}`, { maxAge: 300, httpOnly: true });
+  return c.redirect(generateOAuthLoginUrl(state, "invite", guildId));
 });
 
 routes.get('/callback', async (c) => {
   const client = c.get('client');
   const { code, state } = c.req.query();
 
-  client.logger.info('OAuth2 code:', code);
-  client.logger.info('OAuth2 state:', state);
-
   if (!code || !state) {
-    client.logger.error('Missing code or state in OAuth2 callback');
     return c.redirect('/auth/login');
   }
 
   const savedState = getCookie(c, 'state');
   if (state !== savedState) {
-    client.logger.error('OAuth2 state mismatch');
     return c.redirect('/auth/login');
   }
-
+  
   try {
     const token = await exchangeCode(code);
-    client.logger.info('OAuth2 access token:', token);
 
     const user = await getUserInfo(token.access_token);
     if (!user) {
-      client.logger.error('Failed to fetch user info');
       return c.redirect('/auth/login');
     }
-
+    
     const session = await createSession(c, user, token);
-    setCookie(c, 'x-session-id', session.id, { maxAge: token.expires_in, httpOnly: true });
+    setCookie(c, 'x-session', JSON.stringify(session), { maxAge: token.expires_in, httpOnly: true });
+    client.logger.info(`User ${user.id} logged in`);
     deleteCookie(c, 'state');
+    
+    const returnTo = getCookie(c, 'returnTo');
+    const url = new URL(returnTo ?? '', env.DASHBOARD_URL);
+    deleteCookie(c, 'returnTo');
 
-    return c.redirect(env.DASHBOARD_URL);
+    client.logger.info(`Redirecting user to ${url.toString()}`, getCookie(c, 'x-session'));
+
+    return c.redirect(url.toString());
   } catch (error) {
     client.logger.error('Error during OAuth2 token exchange', error);
     return c.redirect('/auth/login');
@@ -67,8 +75,6 @@ routes.get('/callback', async (c) => {
 routes.get('/session', async (c) => {
   const client = c.get('client');
   const sessionId = getSessionId(c);
-
-  client.logger.info('Session ID:', sessionId);
 
   if (!sessionId) {
     return c.json({ success: false });
@@ -82,6 +88,7 @@ routes.get('/session', async (c) => {
       user: {
         select: {
           id: true,
+          email: true,
         },
       },
     },
@@ -99,12 +106,14 @@ routes.get('/session', async (c) => {
     success: true,
     session: {
       ...session,
-      user: { ...session.user, username: user.username, image: user.displayAvatarURL() },
+      user: { ...session.user, username: user.username, image: user.displayAvatarURL(), accent: user.hexAccentColor },
     },
   });
 });
 
-routes.get('/signout', handleSignout);
-routes.post('/signout', handleSignout);
+routes.all('/signout', async (c) => {
+  await handleSignout(c);
+  return c.json({ success: true });
+});
 
 export default routes;

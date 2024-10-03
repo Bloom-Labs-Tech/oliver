@@ -58,6 +58,45 @@ routes.openapi(
   },
 );
 
+routes.openapi(
+  {
+    method: 'get',
+    path: '/stats',
+    summary: 'Get stats for the Oliver Bot.',
+    tags: ['Home'],
+    responses: {
+      200: {
+        description: 'The stats for the Oliver Bot.',
+        content: {
+          'application/json': {
+            schema: z.object({
+              serversJoined: z.number({ description: 'The number of servers joined.' }).openapi({
+                description: 'The number of servers joined.',
+                example: 181,
+              }),
+              roomsCreated: z.number({ description: 'The number of rooms created.' }).openapi({
+                description: 'The number of rooms created.',
+                example: 165_000,
+              }),
+              messagesSent: z.number({ description: 'The number of messages sent.' }).openapi({
+                description: 'The number of messages sent.',
+                example: 100_000_000,
+              }),
+            }),
+          },
+        },
+      },
+    },
+  },
+  (context) => {
+    return context.json({
+      serversJoined: 181,
+      roomsCreated: 165_000,
+      messagesSent: 100_000_000,
+    });
+  },
+);
+
 routes.doc('/openapi.json', {
   info: {
     title: 'OliverAPI',

@@ -1,21 +1,23 @@
-import { deleteSessionIdFromCookies, getSessionIdFromCookies } from "~/actions/auth";
+import { getSessionFromCookies } from "~/actions/auth";
 
 export async function GET() {
-  const sessionId = await getSessionIdFromCookies();
-  if (!sessionId) {
+  const session = await getSessionFromCookies();
+
+  if (!session) {
     return Response.json({
       session: null,
     });
   }
   
-  const session = await fetch('http://localhost:3001/auth/session', {
+  const sessionWithUser = await fetch('http://localhost:3001/auth/session', {
     headers: {
-      'x-session-id': sessionId,
+      'x-session-id': session.id,
     },
   }).then((res) => res.json());
 
-  if (!session.success) {
-    await deleteSessionIdFromCookies();
+  if (!sessionWithUser.success) {
+    console.log('Session not found in API', session);
+    // await deleteSessionFromCookies();
 
     return Response.json({
       session: null,
@@ -23,6 +25,6 @@ export async function GET() {
   }
   
   return Response.json({
-    session: session.session,
+    session: sessionWithUser.session,
   });
 }

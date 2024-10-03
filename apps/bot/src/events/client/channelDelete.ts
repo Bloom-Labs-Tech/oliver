@@ -1,6 +1,6 @@
 import { isGuildBasedChannel } from '@sapphire/discord.js-utilities';
 import type { Channel } from 'discord.js';
-import { OliverEvent } from '../../client';
+import { OliverEvent } from '~/client';
 
 export default class Event extends OliverEvent<'channelDelete'> {
   public constructor() {

@@ -1,32 +1,33 @@
 import { isGuildBasedChannel, isTextChannel } from '@sapphire/discord.js-utilities';
 import {
-    ActionRowBuilder,
-    AutocompleteInteraction,
-    ButtonInteraction,
-    CommandInteraction,
-    ComponentType,
-    type Interaction,
-    ModalSubmitInteraction,
-    TextInputBuilder,
-    TextInputStyle,
+  ActionRowBuilder,
+  AutocompleteInteraction,
+  ButtonInteraction,
+  CommandInteraction,
+  ComponentType,
+  type Interaction,
+  ModalSubmitInteraction,
+  TextInputBuilder,
+  TextInputStyle,
 } from 'discord.js';
 import { OliverCommand, OliverEvent } from '~/client';
-import { TicketActions, type TicketActionsType, VerificationActions, isTicketAction } from '~/services/common';
+import { TicketActions, type TicketActionsType, VerificationActions, getGuildFeature, isTicketAction } from '~/services/common';
 import { handleLevelUp } from '~/services/levels';
 import {
-    claimVerificationTicket,
-    closeTicket,
-    createTicket,
-    generateVerificationCode,
-    verifyUserTicket,
+  claimVerificationTicket,
+  closeTicket,
+  createTicket,
+  createVerificationTicket,
+  generateVerificationCode,
+  verifyUserTicket,
 } from '~/services/tickets';
 import {
-    createFormModal,
-    createServerUpdateEmbed,
-    createTicketButtons,
-    createTicketEmbed,
-    createVerificationClaimButton,
-    createVerificationTokenEmbed,
+  createFormModal,
+  createServerUpdateEmbed,
+  createTicketButtons,
+  createTicketEmbed,
+  createVerificationClaimButton,
+  createVerificationTokenEmbed,
 } from '../../utils/embeds';
 import { OliverError } from '../../utils/errors';
 
@@ -90,6 +91,11 @@ export default class OliverReadyEvent extends OliverEvent<'interactionCreate'> {
         throw new OliverError('Guild not found');
       }
 
+      const feature = await getGuildFeature(interaction.guild.id, 'LEGENDOFMUSHROOM', true);
+      if (!feature?.isEnabled || !feature.data.verification.isEnabled) {
+        throw new OliverError('Verification feature is not enabled.');
+      }
+
       const newVerificationCode = generateVerificationCode();
       await this.client.db.user.upsert({
         where: {
@@ -105,10 +111,9 @@ export default class OliverReadyEvent extends OliverEvent<'interactionCreate'> {
       });
 
       const embed = createVerificationTokenEmbed(newVerificationCode, interaction.user.id, username);
-      const { channel, ticket } = await createTicket(
+      const { channel, ticket } = await createVerificationTicket(
         interaction.user.id,
         interaction.guild.id,
-        'VERIFICATION',
         username,
       );
 

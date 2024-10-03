@@ -1,10 +1,10 @@
 import { isTextChannel } from '@sapphire/discord.js-utilities';
 import type { GuildMember } from 'discord.js';
+import { OliverEvent } from '~/client';
+import { GreetingsCard } from '~/services/cards/greetingCard';
 import { getGuildFeature } from '~/services/common';
-import { OliverEvent } from '../../client';
-import { GreetingsCard } from '../../services/cards/greetingCard';
-import { CommandExecutionError } from '../../utils/errors';
-import { getOrdinalSuffix } from '../../utils/helpers';
+import { CommandExecutionError } from '~/utils/errors';
+import { getOrdinalSuffix } from '~/utils/helpers';
 
 export default class OliverGuildMemberAddEvent extends OliverEvent<'guildMemberAdd'> {
   public constructor() {

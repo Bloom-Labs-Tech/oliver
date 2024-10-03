@@ -46,12 +46,12 @@ type ApiKeyConfig = {
 type ApiKeyFunction = (cfg?: ApiKeyConfig) => MiddlewareHandler;
 
 const defaultConfig: ApiKeyConfig = {
-  getKey: (c) => c.req.header('x-api-key') || c.req.header('x-session-id') || getSessionId(c),
+  getKey: (c) => c.req.header('x-api-key') || getSessionId(c) || c.req.header('x-session-id'),
   handleInvalidKey: (c) => c.json({ message: 'Invalid API key' }, 401),
   onError: (c, error) => c.json({ message: error.message }, 500),
 };
 
-const apiKeyRegex = /^(test|prod):[a-zA-Z0-9]{16}$/;
+const apiKeyRegex = /^(test|prod|oliver):[a-zA-Z0-9]{16}$/;
 export const handleApiKey: ApiKeyFunction = (cfg) => async (c, next) => {
   const config = { ...defaultConfig, ...cfg } as ApiKeyConfig;
   const apiKey = config.getKey?.(c);
@@ -78,6 +78,12 @@ export const handleApiKey: ApiKeyFunction = (cfg) => async (c, next) => {
     if (!apiKey || !apiKeyData) {
       return config.handleInvalidKey?.(c);
     }
+    await client.db.apiKeyLog.create({
+      data: {
+        endpoint: c.req.url,
+        keyId: apiKeyData.id,
+      },
+    });
   } else {
     const session = await client.db.session
       .findUnique({
@@ -123,7 +129,7 @@ export const createFactory = () => {
   return app;
 };
 
-export function generateOAuthLoginUrl(state: string, type: 'invite' | 'login') {
+export function generateOAuthLoginUrl(state: string, type: 'invite' | 'login', guildId?: string) {
   const scopes = ['identify', 'guilds', 'email']; 
   if (type === 'invite') scopes.push('bot');
   const permissions = '581936125094001';
@@ -138,6 +144,9 @@ export function generateOAuthLoginUrl(state: string, type: 'invite' | 'login') {
   if (type === "invite") {
     url.searchParams.set('permissions', permissions);
     url.searchParams.set('integration_type', integrationType);
+    if (guildId) {
+      url.searchParams.set('guild_id', guildId);
+    }
   }
 
   return url.toString();
@@ -230,7 +239,23 @@ export async function revokeToken(token: string) {
   return true;
 }
 
-export const getSessionId = (c: HonoContext) => getCookie(c, 'x-session-id') || c.req.header('x-session-id');
+export const getSessionId = (c: HonoContext) => {
+  try {
+    const sessionId = c.req.header('x-session-id');
+    if (sessionId) return sessionId;
+    
+    const session = getCookie(c, 'x-session');
+    client.logger.debug('Session cookie', session);
+    if (!session) return null;
+    const parsedSession = JSON.parse(session);
+    client.logger.debug('Parsed session', parsedSession);
+    if (!parsedSession.id) return null;
+    return parsedSession.id;
+  } catch {
+    client.logger.error('Error parsing session cookie');
+    return null;
+  }
+}
 
 export const createSession = async (c: HonoContext, user: DiscordOAuth2UserInfo, token: DiscordOAuth2AccessToken) => {
   const client = c.get('client');
@@ -249,8 +274,22 @@ export const createSession = async (c: HonoContext, user: DiscordOAuth2UserInfo,
       refreshToken: token.refresh_token,
       expiresAt: new Date(Date.now() + token.expires_in * 1000),
     },
-    select: { id: true, expiresAt: true },
+    include: {
+      user: {
+        select: {
+          id: true,
+          email: true,
+        },
+      }
+    }
   });
+
+  if (!session?.user.email) {
+    await client.db.user.update({
+      where: { id: user.id },
+      data: { email: user.email },
+    });
+  }
 
   return session;
 };
@@ -261,11 +300,9 @@ export const handleSignout = async (c: HonoContext) => {
 
   if (sessionId) {
     await client.db.session.delete({ where: { id: sessionId } });
-    deleteCookie(c, 'x-session-id');
+    deleteCookie(c, 'x-session');
     await client.db.apiKey.deleteMany({ where: { key: sessionId } });
   }
-
-  return c.json({ success: true });
 };
 
 export const getGuildsFromSessionTokens = async (c: HonoContext): Promise<{
@@ -311,6 +348,10 @@ export const getGuildsFromSessionTokens = async (c: HonoContext): Promise<{
     },
   }).then((res) => res.json()) as DiscordOAuth2Guild[];
 
+  if (!guilds || !Array.isArray(guilds)) {
+    return [];
+  }
+
   const mappedGuilds = guilds.map((g) => {
     const canManage = new PermissionsBitField(BigInt(g.permissions)).has('ManageGuild');
     const hasBot = client.guilds.cache.has(g.id) ?? false;
@@ -323,7 +364,8 @@ export const getGuildsFromSessionTokens = async (c: HonoContext): Promise<{
       isOwner: g.owner,
       permissions: g.permissions,
       canManage,
-      hasBot
+      hasBot,
+      memberCount: client.guilds.cache.get(g.id)?.members.cache.filter((m) => !m.user.bot).size ?? 0,
     };
   }).sort((a, b) => {
     if (a.isOwner !== b.isOwner) return a.isOwner ? -1 : 1;

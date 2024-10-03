@@ -6,5 +6,6 @@ type AuthSession = {
     email: string;
     username: string;
     image: string;
+    accent: string;
   }
 }

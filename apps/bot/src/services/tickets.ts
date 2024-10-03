@@ -98,6 +98,52 @@ export async function createTicket(
   }
 }
 
+export async function createVerificationTicket(
+  userId: string,
+  guildId: string,
+  username?: string,
+): Promise<{ channel: TextChannel | null; ticket: Ticket | null }> {
+  const type = "VERIFICATION";
+
+  try {
+    const guild = client.guilds.cache.get(guildId);
+    if (!guild) throw new OliverError('Guild not found.');
+
+    const ticketFeature = await getGuildFeature(guildId, 'LEGENDOFMUSHROOM', true);
+    if (!ticketFeature?.isEnabled) throw new OliverError('Ticket feature is not enabled.');
+
+    const ticketCategory = client.channels.cache.get(ticketFeature.data.verification.categoryId);
+    if (!isGuildBasedChannel(ticketCategory)) throw new OliverError('Ticket category not found.');
+
+    const ticketId = generateTicketId();
+    const ticketChannel = await guild.channels.create({
+      name: `${type.toLowerCase()}-${ticketId}`,
+      type: ChannelType.GuildText,
+      parent: ticketCategory.id,
+      permissionOverwrites: [
+        { id: userId, allow: ['ViewChannel', 'SendMessages', 'ReadMessageHistory'] },
+        { id: guildId, deny: ['ViewChannel'] },
+      ],
+    });
+
+    const newTicket = await client.db.ticket.create({
+      data: {
+        id: ticketId,
+        channelId: ticketChannel.id,
+        type,
+        userId,
+        username,
+        guildId,
+      },
+    });
+
+    return { channel: ticketChannel, ticket: newTicket };
+  } catch (error) {
+    client.logger.error('Error creating ticket:', error);
+    return { channel: null, ticket: null };
+  }
+}
+
 export async function closeTicket(ticketId: string, remove: boolean): Promise<boolean> {
   try {
     const { ticket, channel, firstMessage } = await findTicketAndChannel(ticketId);
@@ -163,8 +209,8 @@ export async function verifyUserTicket(ticketId: string) {
     const { ticket, channel } = await findTicketAndChannel(ticketId);
     if (!ticket?.username || !ticket?.userId || !channel) return false;
 
-    const feature = await getGuildFeature(ticket.guildId, 'VERIFICATION', true);
-    if (!feature?.isEnabled) return false;
+    const feature = await getGuildFeature(ticket.guildId, 'LEGENDOFMUSHROOM', true);
+    if (!feature?.isEnabled || !feature?.data?.verification.isEnabled) throw new OliverError('Feature not enabled.');
 
     await client.db.user.update({
       where: { id: ticket.userId },
@@ -174,9 +220,9 @@ export async function verifyUserTicket(ticketId: string) {
     await closeTicket(ticketId, true);
 
     const member = await channel.guild.members.fetch(ticket.userId);
-    if (!member) return false;
+    if (!member) throw new OliverError('Member not found.');
 
-    const verifiedRoles = feature.data.roles;
+    const verifiedRoles = feature.data.verification.roles;
 
     if (verifiedRoles.length) {
       await member.roles.add(verifiedRoles);

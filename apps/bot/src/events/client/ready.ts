@@ -1,5 +1,5 @@
-import { client } from '../..';
-import { OliverEvent } from '../../client';
+import { OliverEvent } from '~/client';
+import { client } from '~/index';
 
 export default class OliverReadyEvent extends OliverEvent<'ready'> {
   public constructor() {

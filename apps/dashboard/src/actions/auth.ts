@@ -1,14 +1,31 @@
 'use server';
 
 import { cookies } from 'next/headers';
+import { z } from 'zod';
 
-export async function getSessionIdFromCookies() {
+const sessionSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  expiresAt: z.string(),
+  accessToken: z.string(),
+  refreshToken: z.string(),
+});
+
+export async function getSessionFromCookies() {
   const cookieStore = cookies();
-  const sessionId = cookieStore.get('x-session-id');
-  return sessionId?.value;
+  const sessionCookie = cookieStore.get('x-session');
+  const session = sessionSchema.safeParse(!sessionCookie?.value ? null : JSON.parse(sessionCookie.value));
+  
+  if (!session.success) {
+    console.log('Session not found in cookies', sessionCookie);
+    // await deleteSessionFromCookies();
+    return null;
+  }
+
+  return session?.success ? session.data : null;
 }
 
-export async function deleteSessionIdFromCookies() {
+export async function deleteSessionFromCookies() {
   const cookieStore = cookies();
-  cookieStore.delete('x-session-id');
+  cookieStore.delete('x-session');
 }

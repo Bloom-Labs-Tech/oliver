@@ -1,6 +1,6 @@
 import type { Guild } from 'discord.js';
-import { client } from '../..';
-import { OliverEvent } from '../../client';
+import { OliverEvent } from '~/client';
+import { client } from '~/index';
 
 export default class Event extends OliverEvent<'guildDelete'> {
   public constructor() {

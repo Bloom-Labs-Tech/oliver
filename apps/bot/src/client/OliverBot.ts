@@ -14,7 +14,6 @@ import {
 } from 'discord.js';
 import { env } from '~/env';
 import { db } from '~/prisma';
-import { getYoutubeCookie } from '~/utils/cookies';
 import { CommandHandler } from './OliverCommandHandler';
 import { EventHandler } from './OliverEventHandler';
 import OliverInviteTracker from './OliverInviteTracker';
@@ -73,7 +72,6 @@ export class OliverBot extends Client {
   }
 
   async init(_?: ClientOptions): Promise<string> {
-    await getYoutubeCookie();
     // const options = { ...defaultOptions, ...clientOptions };
     await super.login(env.DISCORD_TOKEN);
 

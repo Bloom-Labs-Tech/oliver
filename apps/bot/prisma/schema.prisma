@@ -26,12 +26,26 @@ enum FeatureType {
   AUTOROLE
   TICKETS
   LEVELING
-  VERIFICATION
   INVITES
   VOICE
   COMMANDS
   WELCOME
   GOODBYE
+
+  // IMPLEMENTING
+  LEGENDOFMUSHROOM
+
+  // TO BE IMPLEMENTED
+  MODERATION
+  SUGGESTIONS
+  ECONOMY
+  LOGS
+  ANNOUNCEMENTS
+  REACTION_ROLES
+  CUSTOM_COMMANDS
+  EVENTS
+  REMINDERS
+  GIVEAWAYS
 }
 
 model Guild {
@@ -201,4 +215,11 @@ model Invite {
   updatedAt DateTime @updatedAt
 
   @@id([code, guildId])
+}
+
+model MushroomCode {
+  id          Int       @id @default(autoincrement())
+  code        String    @unique
+  expiresAt   DateTime?
+  availableAt DateTime?
 }

@@ -1,5 +1,5 @@
 import { z } from '@hono/zod-openapi';
-import { type ColorResolvable } from 'discord.js';
+import type { ColorResolvable } from 'discord.js';
 import { createFactory, parseBigInt } from '~/api/lib/helpers';
 import {
   errorSchema,

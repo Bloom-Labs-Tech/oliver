@@ -1,4 +1,4 @@
-import { FeatureType, type GuildFeature } from '@prisma/client';
+import { FeatureType } from '@prisma/client';
 import { z } from 'zod';
 import { client } from '..';
 
@@ -19,10 +19,6 @@ export const FeatureData = {
   TICKETS: z.object({
     categoryId: z.string(),
   }),
-  VERIFICATION: z.object({
-    categoryId: z.string(),
-    roles: z.array(z.string()),
-  }),
   LEVELING: z.object({
     channelId: z.string(),
     roles: z.array(z.object({ level: z.number(), id: z.string() })),
@@ -40,41 +36,100 @@ export const FeatureData = {
   AUTOROLE: z.object({
     roles: z.array(z.string()),
   }),
+  LEGENDOFMUSHROOM: z.object({
+    verification: z.object({
+      isEnabled: z.boolean(),
+      categoryId: z.string(),
+      roles: z.array(z.string()),
+    }),
+  }),
+  ANNOUNCEMENTS: z.object({
+    channelId: z.string(),
+  }),
+  SUGGESTIONS: z.object({
+    channelId: z.string(),
+  }),
+  MODERATION: z.object({
+    channelId: z.string(),
+  }),
+  CUSTOM_COMMANDS: z.object({
+    commands: z.array(z.object({
+      name: z.string(),
+      response: z.string(),
+    })),
+  }),
+  ECONOMY: z.object({}),
+  EVENTS: z.object({
+    channelId: z.string(),
+    events: z.array(z.object({
+      name: z.string(),
+      description: z.string(),
+      date: z.string(),
+    })),
+  }),
+  GIVEAWAYS: z.object({
+    channelId: z.string(),
+  }),
+  LOGS: z.object({
+    channelId: z.string(),
+  }),
+  REACTION_ROLES: z.object({
+    roles: z.array(z.object({
+      emoji: z.string(),
+      roleId: z.string(),
+    })),
+  }),
+  REMINDERS: z.object({
+    channelId: z.string(),
+    reminders: z.array(z.object({
+      name: z.string(),
+      description: z.string(),
+      date: z.string(),
+    })),
+  }),
 };
 
+// Type definitions for feature schemas
 export type FeatureDataTypeMap = {
   [FeatureType.COMMANDS]: typeof FeatureData.COMMANDS;
   [FeatureType.INVITES]: typeof FeatureData.INVITES;
   [FeatureType.TICKETS]: typeof FeatureData.TICKETS;
-  [FeatureType.VERIFICATION]: typeof FeatureData.VERIFICATION;
   [FeatureType.LEVELING]: typeof FeatureData.LEVELING;
   [FeatureType.VOICE]: typeof FeatureData.VOICE;
   [FeatureType.WELCOME]: typeof FeatureData.WELCOME;
   [FeatureType.GOODBYE]: typeof FeatureData.GOODBYE;
   [FeatureType.AUTOROLE]: typeof FeatureData.AUTOROLE;
+  [FeatureType.LEGENDOFMUSHROOM]: typeof FeatureData.LEGENDOFMUSHROOM;
+  [FeatureType.ANNOUNCEMENTS]: typeof FeatureData.ANNOUNCEMENTS;
+  [FeatureType.SUGGESTIONS]: typeof FeatureData.SUGGESTIONS;
+  [FeatureType.MODERATION]: typeof FeatureData.MODERATION;
+  [FeatureType.CUSTOM_COMMANDS]: typeof FeatureData.CUSTOM_COMMANDS;
+  [FeatureType.ECONOMY]: typeof FeatureData.ECONOMY;
+  [FeatureType.EVENTS]: typeof FeatureData.EVENTS;
+  [FeatureType.GIVEAWAYS]: typeof FeatureData.GIVEAWAYS;
+  [FeatureType.LOGS]: typeof FeatureData.LOGS;
+  [FeatureType.REACTION_ROLES]: typeof FeatureData.REACTION_ROLES;
+  [FeatureType.REMINDERS]: typeof FeatureData.REMINDERS;
 };
 
-export const FormatCommandSchema = (type: FeatureType) => {
-  const schema = FeatureData[type];
-  return z.object({
-    isEnabled: z.boolean(),
-    data: schema,
-  });
-};
-
-export const AllFeaturesSchema = z.object({
-  COMMANDS: FormatCommandSchema(FeatureType.COMMANDS),
-  INVITES: FormatCommandSchema(FeatureType.INVITES),
-  TICKETS: FormatCommandSchema(FeatureType.TICKETS),
-  VERIFICATION: FormatCommandSchema(FeatureType.VERIFICATION),
-  LEVELING: FormatCommandSchema(FeatureType.LEVELING),
-  VOICE: FormatCommandSchema(FeatureType.VOICE),
-  WELCOME: FormatCommandSchema(FeatureType.WELCOME),
-  GOODBYE: FormatCommandSchema(FeatureType.GOODBYE),
-  AUTOROLE: FormatCommandSchema(FeatureType.AUTOROLE),
+// Helper to create the schema with common structure
+export const FormatCommandSchema = (type: FeatureType) => z.object({
+  isEnabled: z.boolean(),
+  data: FeatureData[type],
 });
 
-export const DefaultFeatureData: Record<FeatureType, z.infer<FeatureDataTypeMap[FeatureType]>> = {
+// Full schema for all features
+export const AllFeaturesSchema = z.object(
+  Object.fromEntries(
+    Object.keys(FeatureData).map((key) => [
+      key,
+      FormatCommandSchema(key as FeatureType),
+    ])
+  )
+);
+
+// Default feature data
+export const DefaultFeatureData: Record<keyof typeof FeatureType, z.infer<FeatureDataTypeMap[FeatureType]>> = {
   [FeatureType.COMMANDS]: {
     about: true,
     cooldown: true,
@@ -91,9 +146,12 @@ export const DefaultFeatureData: Record<FeatureType, z.infer<FeatureDataTypeMap[
   [FeatureType.TICKETS]: {
     categoryId: '',
   },
-  [FeatureType.VERIFICATION]: {
-    categoryId: '',
-    roles: [],
+  [FeatureType.LEGENDOFMUSHROOM]: {
+    verification: {
+      isEnabled: false,
+      categoryId: '',
+      roles: [],
+    },
   },
   [FeatureType.LEVELING]: {
     channelId: '',
@@ -112,33 +170,62 @@ export const DefaultFeatureData: Record<FeatureType, z.infer<FeatureDataTypeMap[
   [FeatureType.AUTOROLE]: {
     roles: [],
   },
+  [FeatureType.ANNOUNCEMENTS]: {
+    channelId: '',
+  },
+  [FeatureType.SUGGESTIONS]: {
+    channelId: '',
+  },
+  [FeatureType.MODERATION]: {
+    channelId: '',
+  },
+  [FeatureType.CUSTOM_COMMANDS]: {
+    commands: [],
+  },
+  [FeatureType.ECONOMY]: {},
+  [FeatureType.EVENTS]: {
+    channelId: '',
+    events: [],
+  },
+  [FeatureType.GIVEAWAYS]: {
+    channelId: '',
+  },
+  [FeatureType.LOGS]: {
+    channelId: '',
+  },
+  [FeatureType.REACTION_ROLES]: {
+    roles: [],
+  },
+  [FeatureType.REMINDERS]: {
+    channelId: '',
+    reminders: [],
+  },
+};
+// Parse feature data with validation
+const parseFeatureTypeData = <T extends FeatureType>(providedData: unknown, type: T) => {
+  const schema = FeatureData[type];
+  if (!providedData || Object.keys(providedData).length === 0) {
+    return { success: true, data: null };
+  }
+  return schema.safeParse(providedData);
 };
 
-const parseFeatureTypeData = <T extends FeatureType>(providedData: GuildFeature['data'], type: T) => {
-  const featureSchema = FeatureData[type] as z.AnyZodObject;
-  if (Object.keys(JSON.parse(JSON.stringify(providedData))).length === 0) return { success: true, data: null };
-  const parsed = featureSchema.safeParse(providedData);
-  return parsed;
+export type ParsedGuildFeature<T extends FeatureType, R extends boolean> = {
+  data: R extends true ? z.infer<FeatureDataTypeMap[T]> : z.infer<FeatureDataTypeMap[T]> | null;
+  isEnabled: boolean;
+  guildId: string;
+  type: T;
 };
 
-export type ParsedGuildFeature<T extends FeatureType, R extends boolean> = (R extends true
-  ? { data: z.infer<FeatureDataTypeMap[T]> }
-  : { data: z.infer<FeatureDataTypeMap[T]> | null }) &
-  Omit<GuildFeature, 'data'>;
-
+// Fetch or initialize a guild feature
 export async function getGuildFeature<T extends FeatureType, R extends boolean = false>(
   guildId: string,
   type: T,
-  required?: R,
+  required?: R
 ): Promise<ParsedGuildFeature<T, R> | null> {
   const feature = await client.db.guildFeature
     .upsert({
-      where: {
-        type_guildId: {
-          guildId,
-          type,
-        },
-      },
+      where: { type_guildId: { guildId, type } },
       update: {},
       create: {
         guildId,
@@ -152,106 +239,75 @@ export async function getGuildFeature<T extends FeatureType, R extends boolean =
   if (!feature) return null;
 
   const parsedFeature = parseFeatureTypeData(feature.data, type);
-
-  if (!parsedFeature.success) return null;
-  if (!parsedFeature.data && required) return null;
+  if (!parsedFeature.success || (required && !parsedFeature.data)) return null;
 
   return {
     ...feature,
     data: parsedFeature.data as z.infer<FeatureDataTypeMap[T]>,
-  };
+  } as ParsedGuildFeature<T, R>;
 }
 
-export async function getAllGuildFeatures<D = null>(
-  guildId: string,
-): Promise<
-  {
-    data: z.infer<FeatureDataTypeMap[FeatureType]> | D;
-    type: FeatureType;
-    isEnabled: boolean;
-    guildId: string;
-  }[]
-> {
+// Fetch all guild features and create missing ones
+export async function getAllGuildFeatures<D = null>(guildId: string) {
   const features = await client.db.guildFeature.findMany({ where: { guildId } });
 
-  const missingFeatures = Object.values(FeatureType).filter(
-    (type) => !features.some((feature) => feature.type === type),
-  );
+  const missingFeatures = Object.keys(FeatureData).filter(
+    (type) => !features.some((feature) => feature.type === type)
+  ) as FeatureType[];
+
   if (missingFeatures.length) {
-    await client.db.guildFeature
-      .createMany({
-        data: missingFeatures.map((type) => ({
-          guildId,
-          type,
-          isEnabled: false,
-          data: DefaultFeatureData[type],
-        })),
-      })
-      .then(() => {
-        features.push(
-          ...missingFeatures.map((type) => ({
-            guildId,
-            type,
-            isEnabled: false,
-            data: DefaultFeatureData[type],
-          })),
-        );
-      });
+    await createMissingFeatures(guildId, missingFeatures);
   }
 
-  const parsedFeatures = features.map((feature) => {
+  return features.map((feature) => {
     const parsedFeature = parseFeatureTypeData(feature.data, feature.type);
     return {
       ...feature,
       data: parsedFeature.data as z.infer<FeatureDataTypeMap[typeof feature.type]>,
     };
   });
-
-  return parsedFeatures;
 }
 
-// biome-ignore lint/complexity/noBannedTypes: <explanation>
-export const formatAllFeaturesAsObject = (features: Awaited<ReturnType<typeof getAllGuildFeatures<{}>>>) => {
-  return features.reduce(
-    (acc, feature) => {
-      acc[feature.type] = {
-        data: feature.data,
-        isEnabled: feature.isEnabled,
-      };
-      return acc;
-    },
-    {} as Record<FeatureType, { data: z.infer<FeatureDataTypeMap[FeatureType]>; isEnabled: boolean }>,
-  );
+// Create missing features in the database
+async function createMissingFeatures(guildId: string, missingFeatures: FeatureType[]) {
+  await client.db.guildFeature.createMany({
+    data: missingFeatures.map((type) => ({
+      guildId,
+      type,
+      isEnabled: false,
+      data: DefaultFeatureData[type],
+    })),
+  });
+}
+
+// Utility to format all features as an object
+export const formatAllFeaturesAsObject = (
+  // biome-ignore lint/complexity/noBannedTypes: <explanation>
+features: Awaited<ReturnType<typeof getAllGuildFeatures<{}>>>
+) => {
+  return features.reduce((acc, feature) => {
+    acc[feature.type] = {
+      data: feature.data,
+      isEnabled: feature.isEnabled,
+    };
+    return acc;
+  }, {} as Record<FeatureType, { data: z.infer<FeatureDataTypeMap[FeatureType]>; isEnabled: boolean }>);
 };
 
+// Update guild feature data
 export async function updateGuildFeature<T extends FeatureType>(
   guildId: string,
   type: T,
-  { data, isEnabled }: { isEnabled: boolean; data?: z.infer<FeatureDataTypeMap[T]> },
+  { data, isEnabled }: { isEnabled: boolean; data?: z.infer<FeatureDataTypeMap[T]> }
 ) {
   const validation = FeatureData[type].safeParse(data);
   if (!validation.success) return null;
 
-  const feature = await client.db.guildFeature.upsert({
-    where: {
-      type_guildId: {
-        guildId,
-        type,
-      },
-    },
-    update: {
-      isEnabled,
-      data: validation.data,
-    },
-    create: {
-      guildId,
-      type,
-      data: validation.data,
-      isEnabled,
-    },
+  return client.db.guildFeature.upsert({
+    where: { type_guildId: { guildId, type } },
+    update: { isEnabled, data: validation.data },
+    create: { guildId, type, data: validation.data, isEnabled },
   });
-
-  return feature;
 }
 
 export type TicketNameType = `ticket-${string}` | `verify-${string}`;

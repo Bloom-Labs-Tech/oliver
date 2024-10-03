@@ -9,11 +9,12 @@
     "dev:dashboard": "cd apps/dashboard && bun dev",
     "dev:db": "cd apps/bot && bunx prisma studio",
     "start": "concurrently -n bot,dashboard -c green,blue \"bun start:bot\" \"bun start:dashboard\"",
-    "dev": "concurrently -n bot,dashboard,prisma -c green,blue,red \"bun dev:bot\" \"bun dev:dashboard\" \"bun dev:db\""
+    "dev": "concurrently -n bot,dashboard,prisma -c green,blue,red \"bun dev:bot\" \"bun dev:dashboard\" \"bun dev:db\"",
+    "db:push": "cd apps/bot && bunx prisma db push",
+    "db:generate": "cd apps/bot && bunx prisma generate"
   },
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "apps/*"
   ],
   "dependencies": {
     "puppeteer": "^23.4.0",

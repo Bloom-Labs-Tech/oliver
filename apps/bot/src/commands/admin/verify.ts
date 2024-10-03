@@ -32,8 +32,8 @@ export default class Command extends OliverCommand {
         return interaction.reply({ content: 'This command only works in a server.', ephemeral: true });
       }
 
-      const feature = await getGuildFeature(interaction.guild.id, 'VERIFICATION', true);
-      if (!feature?.isEnabled) {
+      const feature = await getGuildFeature(interaction.guild.id, 'LEGENDOFMUSHROOM', true);
+      if (!feature?.isEnabled || !feature.data.verification.isEnabled) {
         return interaction.reply({ content: 'Verification feature is not enabled.', ephemeral: true });
       }
 

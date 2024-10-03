@@ -1,5 +1,5 @@
 import { ChannelType as DBChannelType } from '@prisma/client';
-import { type Guild, type GuildMember } from 'discord.js';
+import type { Guild, GuildMember } from 'discord.js';
 import type { Context } from 'hono';
 import { z } from 'zod';
 import { AllFeaturesSchema } from '~/services/common';

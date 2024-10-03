@@ -1,7 +1,7 @@
 import { isGuildBasedChannel } from '@sapphire/discord.js-utilities';
 import type { Channel } from 'discord.js';
-import { client } from '../..';
-import { OliverEvent } from '../../client';
+import { OliverEvent } from '~/client';
+import { client } from '~/index';
 
 export default class Event extends OliverEvent<'channelUpdate'> {
   public constructor() {

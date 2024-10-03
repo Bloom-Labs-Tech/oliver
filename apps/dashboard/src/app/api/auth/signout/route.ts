@@ -1,21 +1,21 @@
-import { deleteSessionIdFromCookies, getSessionIdFromCookies } from "~/actions/auth";
+import { deleteSessionFromCookies, getSessionFromCookies } from "~/actions/auth";
 
 export async function GET() {
-  const sessionId = await getSessionIdFromCookies();
-  if (!sessionId) {
+  const session = await getSessionFromCookies();
+  if (!session) {
     return Response.json({
       success: false,
     });
   }
 
-  const session = await fetch('http://localhost:3001/auth/signout', {
+  const signoutSession = await fetch('http://localhost:3001/auth/signout', {
     headers: {
-      'x-session-id': sessionId,
+      'x-session-id': session.id,
     },
   }).then((res) => res.json());
 
-  if (session.success) {
-    await deleteSessionIdFromCookies();
+  if (signoutSession.success) {
+    await deleteSessionFromCookies();
 
     return Response.json(session);
   }

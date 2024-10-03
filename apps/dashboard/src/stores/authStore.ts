@@ -1,5 +1,6 @@
 import { createStore } from 'zustand/vanilla';
 import { navigate } from '~/actions/common';
+import { env } from '~/env';
 
 export type AuthState = {
   status: 'loading' | 'unauthenticated';
@@ -10,7 +11,7 @@ export type AuthState = {
 }
 
 export type AuthActions = {
-  login: () => void;
+  login: (callback?: string) => void;
   logout: () => void;
   invite: () => void;
 }
@@ -27,8 +28,12 @@ export const createAuthStore = (
 ) => {
   const state = createStore<AuthStore>((set) => ({
     ...initState,
-    login: () => {
-      navigate('http://localhost:3001/auth/login');
+    login: (returnTo?: string) => {
+      const url = new URL(`${env.NEXT_PUBLIC_API_URL}/auth/login`);
+      if (returnTo) {
+        url.searchParams.append('callback', returnTo);
+      }
+      navigate(url.toString());
     },
     invite: () => {
       navigate('http://localhost:3001/auth/invite');

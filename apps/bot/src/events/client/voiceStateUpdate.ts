@@ -1,14 +1,14 @@
 import { ChannelType, type VoiceState } from 'discord.js';
+import { OliverEvent } from '~/client';
 import { getGuildFeature } from '~/services/common';
 import {
-    ActionMultiplier,
-    calculateLevelFromXP,
-    calculateTimeBonus,
-    calculateTimeInVoice,
-    calculateXP,
-    handleLevelUp,
+  ActionMultiplier,
+  calculateLevelFromXP,
+  calculateTimeBonus,
+  calculateTimeInVoice,
+  calculateXP,
+  handleLevelUp,
 } from '~/services/levels';
-import { OliverEvent } from '../../client';
 
 export default class Event extends OliverEvent<'voiceStateUpdate'> {
   public constructor() {
